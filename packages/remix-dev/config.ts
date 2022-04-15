@@ -147,6 +147,21 @@ export interface AppConfig {
    * in a CJS build.
    */
   serverDependenciesToBundle?: Array<string | RegExp>;
+
+  /**
+   * When given an outputFile, remix will generate useful TypeScript types for route-related things such:
+   * - ActionPaths (useful for type-hinting <fetch.Form action="some/route/path" />)
+   * - TBD
+   *
+   */
+  generateTypes?:
+    | boolean
+    | {
+        /**
+         * Defaults to '/remix-generated-types.d.ts'
+         */
+        outputFile: string;
+      };
 }
 
 /**
@@ -250,6 +265,21 @@ export interface RemixConfig {
    * in a CJS build.
    */
   serverDependenciesToBundle: Array<string | RegExp>;
+
+  /**
+   * When given an outputFile, remix will generate useful TypeScript types for route-related things such:
+   * - ActionPaths (useful for type-hinting <fetch.Form action="some/route/path" />)
+   * - TBD
+   *
+   */
+  generateTypes?:
+    | boolean
+    | {
+        /**
+         * Defaults to '/remix-generated-types.d.ts'
+         */
+        outputFile: string;
+      };
 }
 
 /**
@@ -417,6 +447,7 @@ export async function readConfig(
     serverEntryPoint: customServerEntryPoint,
     serverDependenciesToBundle,
     mdx,
+    generateTypes: appConfig.generateTypes,
   };
 }
 

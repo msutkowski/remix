@@ -281,6 +281,51 @@ function isEntryPoint(config: RemixConfig, file: string) {
   return false;
 }
 
+function replaceDynamicKeysWithType(route: string) {
+  return (
+    route
+      .split("/")
+      // eslint-disable-next-line no-template-curly-in-string
+      .map((val) => (val.startsWith(":") ? "${DynamicKey}" : val))
+      .join("/")
+  );
+}
+
+function generateTSTypes({
+  config,
+  manifest,
+}: {
+  config: RemixConfig;
+  manifest: AssetsManifest | undefined;
+}) {
+  if (!config.generateTypes || !manifest) return;
+
+  let pathsWithActions = [];
+  for (let route of Object.values(manifest.routes)) {
+    if (route.hasAction && route.path) {
+      pathsWithActions.push(`\`${replaceDynamicKeysWithType(route.path)}\``);
+    }
+  }
+
+  let outputFile = "./remix-gen-action-paths.d.ts";
+  if (typeof config.generateTypes === "object") {
+    outputFile = config.generateTypes.outputFile ?? outputFile;
+  }
+  fse.writeFile(
+    outputFile,
+    `
+  \
+  type LooseAutocomplete<T extends string> = T | (string & {});
+  
+  type DynamicKey = string;
+  
+  type ActionRoutes = ${pathsWithActions.join(" | ")}
+  
+  export type ActionPaths = LooseAutocomplete<ActionRoutes>
+  `
+  );
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 async function buildEverything(
@@ -305,7 +350,9 @@ async function buildEverything(
     );
 
     return await Promise.all([
-      assetsManifestPromise.then(() => browserBuildPromise),
+      assetsManifestPromise
+        .then((manifest) => generateTSTypes({ config, manifest }))
+        .then(() => browserBuildPromise),
       serverBuildPromise,
     ]);
   } catch (err) {
